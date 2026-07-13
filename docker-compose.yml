@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: medibook
+      POSTGRES_USER: medibook
+      POSTGRES_PASSWORD: medibook
+    ports:
+      - "5433:5432"
+    volumes:
+      - medibook-data:/var/lib/postgresql/data
+
+volumes:
+  medibook-data:

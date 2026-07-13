@@ -8,10 +8,8 @@
     - View/list patients
     - Update contact info
 - Doctor directory
-    - Register a doctor
-        - Name, specialty, and weekly working hours
-    - View/list doctors 
-    - Update doctor info
+    - Doctors are preloaded seed data (not managed via the API)
+    - View/list doctors, filterable by specialty
 - Appointment booking
     - Book a 30-minute slot for a patient with a doctor. Business rules: no double-booking a doctor, no double-booking a patient, must fall inside the doctor's working hours, must be in the future.
 
