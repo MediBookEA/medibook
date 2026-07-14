@@ -10,11 +10,14 @@ import com.medibook.exception.OutsideWorkingHoursException;
 import com.medibook.exception.PatientNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -60,6 +63,11 @@ class GlobalExceptionHandlerTest {
 
         @GetMapping("/test/appointment-not-found")
         void appointmentNotFound() { throw new AppointmentNotFoundException(3L); }
+
+        @GetMapping("/test/schedule")
+        void schedule(@RequestParam Long doctorId,
+                      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        }
     }
 
     // ── 409 ──────────────────────────────────────────────────────────────────
@@ -138,5 +146,34 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+    }
+
+    // ── 400: missing/malformed request params ─────────────────────────────────
+
+    @Test
+    void missingRequiredParam_returns400() throws Exception {
+        mvc.perform(get("/test/schedule").param("date", "2026-07-14"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    void malformedParamType_returns400() throws Exception {
+        mvc.perform(get("/test/schedule").param("doctorId", "abc").param("date", "2026-07-14"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    void malformedDateParam_returns400() throws Exception {
+        mvc.perform(get("/test/schedule").param("doctorId", "1").param("date", "not-a-date"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").exists());
     }
 }

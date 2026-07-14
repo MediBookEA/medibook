@@ -22,8 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 @Service
 @Transactional
@@ -64,6 +66,17 @@ public class AppointmentService {
         appointment.setStartTime(request.startTime());
         appointment.setEndTime(slot.endTime());
         return toResponse(appointmentRepository.save(appointment));
+    }
+
+    public List<AppointmentResponse> getSchedule(Long doctorId, LocalDate date) {
+        if (!doctorRepository.existsById(doctorId)) {
+            throw new DoctorNotFoundException(doctorId);
+        }
+        LocalDateTime dayStart = date.atStartOfDay();
+        LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
+        return appointmentRepository.findBookedForDoctorOnDay(doctorId, dayStart, dayEnd).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     // ── private helpers ──────────────────────────────────────────────────────
