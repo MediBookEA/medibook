@@ -1,0 +1,95 @@
+# ==========================================
+# Spring Boot 4 / Maven .gitignore
+# ==========================================
+
+# Maven build output
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Maven Wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# Keep Maven wrapper configuration and scripts
+!.mvn/wrapper/maven-wrapper.properties
+!mvnw
+!mvnw.cmd
+
+# Spring Boot
+HELP.md
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# ==========================================
+# Eclipse / Spring Tool Suite (STS)
+# ==========================================
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+# Eclipse generated binaries
+bin/
+
+# ==========================================
+# IntelliJ IDEA
+# ==========================================
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# ==========================================
+# NetBeans
+# ==========================================
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# Gradle build output (if Gradle is used)
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ==========================================
+# Visual Studio Code
+# ==========================================
+.vscode/
+
+# ==========================================
+# Java
+# ==========================================
+*.class
+*.jar
+*.war
+*.ear
+
+# Exclude generated dependency directories
+dependency-reduced-pom.xml
+
+# ==========================================
+# Application secrets (optional)
+# ==========================================
+# src/main/resources/application-local.yml
+# src/main/resources/application-dev.yml
+.env
+uploads/
+./uploads
