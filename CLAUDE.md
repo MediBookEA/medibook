@@ -92,9 +92,11 @@ ask first. Doctors are seed data only (`src/main/resources/data.sql`).
 
 ## Frontend conventions
 
-- Two views only: BookAppointment and DoctorDaySchedule. React function
-  components with hooks, no class components, no state library, no router
-  libraries beyond what already exists.
+- Three views only: BookAppointment, DoctorDaySchedule, and ManagePatients.
+  React function components with hooks, no class components, no state library,
+  no router libraries beyond what already exists.
 - All API calls go through `frontend/src/api.js`. Handle the standard error
   body and show its `message` to the user.
-- Keep styling minimal (one plain CSS file). Function over beauty.
+- Styling uses Tailwind CSS (utility classes in JSX), configured via
+  `@tailwindcss/vite`. Keep it clean and modern; no component library beyond
+  Tailwind itself.
