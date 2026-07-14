@@ -18,12 +18,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -224,5 +227,41 @@ class AppointmentControllerTest {
                         .content(json(new RescheduleAppointmentRequest(FUTURE_MONDAY_9AM))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("DOUBLE_BOOKING"));
+    }
+
+    // ── GET /api/v1/appointments?doctorId=&date= ──────────────────────────────
+
+    @Test
+    void getAppointments_validParams_returns200WithList() throws Exception {
+        LocalDate date = LocalDate.of(2027, 1, 4);
+        when(service.getSchedule(20L, date)).thenReturn(List.of(bookedResponse()));
+
+        mvc.perform(get("/api/v1/appointments")
+                        .param("doctorId", "20")
+                        .param("date", "2027-01-04"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("BOOKED"));
+    }
+
+    @Test
+    void getAppointments_serviceThrowsDoctorNotFound_returns404() throws Exception {
+        when(service.getSchedule(eq(99L), any())).thenThrow(new DoctorNotFoundException(99L));
+
+        mvc.perform(get("/api/v1/appointments")
+                        .param("doctorId", "99")
+                        .param("date", "2027-01-04"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+    }
+
+    @Test
+    void getAppointments_emptySchedule_returns200EmptyArray() throws Exception {
+        when(service.getSchedule(any(), any())).thenReturn(List.of());
+
+        mvc.perform(get("/api/v1/appointments")
+                        .param("doctorId", "20")
+                        .param("date", "2027-01-04"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
     }
 }

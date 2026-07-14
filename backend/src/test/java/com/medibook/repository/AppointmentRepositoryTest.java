@@ -107,4 +107,79 @@ class AppointmentRepositoryTest {
 
         assertThat(result).isEmpty();
     }
+
+    // ── findBookedForDoctorOnDay ──────────────────────────────────────────────
+
+    private static final LocalDateTime DAY_START = LocalDateTime.of(2026, 7, 14, 0, 0);
+    private static final LocalDateTime DAY_END   = LocalDateTime.of(2026, 7, 15, 0, 0);
+
+    @Test
+    void findBookedForDoctorOnDay_returnsBookedAppointmentForThatDoctorAndDay() {
+        em.persistAndFlush(booked(LocalDateTime.of(2026, 7, 14, 9, 0)));
+
+        List<Appointment> result = repository.findBookedForDoctorOnDay(doctor.getId(), DAY_START, DAY_END);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void findBookedForDoctorOnDay_excludesCancelledAppointments() {
+        em.persistAndFlush(cancelled(LocalDateTime.of(2026, 7, 14, 9, 0)));
+
+        List<Appointment> result = repository.findBookedForDoctorOnDay(doctor.getId(), DAY_START, DAY_END);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findBookedForDoctorOnDay_excludesOtherDoctors() {
+        Doctor otherDoctor = em.persistAndFlush(new Doctor("Dr. Other", "Neurology"));
+        em.persistAndFlush(new Appointment(patient, otherDoctor,
+                LocalDateTime.of(2026, 7, 14, 9, 0), LocalDateTime.of(2026, 7, 14, 9, 30),
+                AppointmentStatus.BOOKED));
+
+        List<Appointment> result = repository.findBookedForDoctorOnDay(doctor.getId(), DAY_START, DAY_END);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findBookedForDoctorOnDay_excludesAdjacentDays() {
+        em.persistAndFlush(booked(LocalDateTime.of(2026, 7, 13, 23, 30)));
+        em.persistAndFlush(booked(LocalDateTime.of(2026, 7, 15, 0, 0)));
+
+        List<Appointment> result = repository.findBookedForDoctorOnDay(doctor.getId(), DAY_START, DAY_END);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findBookedForDoctorOnDay_includesAppointmentAtExactDayStartBoundary() {
+        em.persistAndFlush(booked(DAY_START));
+
+        List<Appointment> result = repository.findBookedForDoctorOnDay(doctor.getId(), DAY_START, DAY_END);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void findBookedForDoctorOnDay_excludesAppointmentAtExactStartOfNextDayBoundary() {
+        em.persistAndFlush(booked(DAY_END));
+
+        List<Appointment> result = repository.findBookedForDoctorOnDay(doctor.getId(), DAY_START, DAY_END);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findBookedForDoctorOnDay_orderedByStartTimeAscending() {
+        LocalDateTime later = LocalDateTime.of(2026, 7, 14, 14, 0);
+        LocalDateTime earlier = LocalDateTime.of(2026, 7, 14, 9, 0);
+        em.persistAndFlush(booked(later));
+        em.persistAndFlush(booked(earlier));
+
+        List<Appointment> result = repository.findBookedForDoctorOnDay(doctor.getId(), DAY_START, DAY_END);
+
+        assertThat(result).extracting(Appointment::getStartTime).containsExactly(earlier, later);
+    }
 }

@@ -376,4 +376,52 @@ class AppointmentServiceTest {
                 new RescheduleAppointmentRequest(newSlot)))
                 .isInstanceOf(DoubleBookingException.class);
     }
+
+    // ── getSchedule ──────────────────────────────────────────────────────────
+
+    @Test
+    void getSchedule_rejectsUnknownDoctorId() {
+        when(doctorRepository.existsById(DOCTOR_ID)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.getSchedule(DOCTOR_ID, LocalDate.of(2026, 7, 14)))
+                .isInstanceOf(DoctorNotFoundException.class);
+    }
+
+    @Test
+    void getSchedule_mapsRepositoryResultsToAppointmentResponseList() {
+        LocalDate date = LocalDate.of(2026, 7, 14);
+        Appointment appointment = new Appointment(patient, doctor,
+                FUTURE_MONDAY_9AM, FUTURE_MONDAY_9AM.plusMinutes(30), AppointmentStatus.BOOKED);
+        when(doctorRepository.existsById(DOCTOR_ID)).thenReturn(true);
+        when(appointmentRepository.findBookedForDoctorOnDay(eq(DOCTOR_ID), any(), any()))
+                .thenReturn(List.of(appointment));
+
+        List<AppointmentResponse> result = service.getSchedule(DOCTOR_ID, date);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).status()).isEqualTo("BOOKED");
+        assertThat(result.get(0).patientName()).isEqualTo("John Doe");
+        assertThat(result.get(0).doctorName()).isEqualTo("Dr. Test");
+    }
+
+    @Test
+    void getSchedule_returnsEmptyListWhenRepositoryReturnsEmpty() {
+        when(doctorRepository.existsById(DOCTOR_ID)).thenReturn(true);
+        when(appointmentRepository.findBookedForDoctorOnDay(eq(DOCTOR_ID), any(), any()))
+                .thenReturn(List.of());
+
+        assertThat(service.getSchedule(DOCTOR_ID, LocalDate.of(2026, 7, 14))).isEmpty();
+    }
+
+    @Test
+    void getSchedule_passesCorrectDayBoundariesToRepository() {
+        LocalDate date = LocalDate.of(2026, 7, 14);
+        when(doctorRepository.existsById(DOCTOR_ID)).thenReturn(true);
+        when(appointmentRepository.findBookedForDoctorOnDay(any(), any(), any())).thenReturn(List.of());
+
+        service.getSchedule(DOCTOR_ID, date);
+
+        verify(appointmentRepository).findBookedForDoctorOnDay(
+                DOCTOR_ID, date.atStartOfDay(), date.plusDays(1).atStartOfDay());
+    }
 }
