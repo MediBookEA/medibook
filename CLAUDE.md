@@ -92,7 +92,9 @@ ask first. Doctors are seed data only (`src/main/resources/data.sql`).
 
 ## Frontend conventions
 
-- Three views only: BookAppointment, DoctorDaySchedule, and ManagePatients.
+- Five views only: BookAppointment, DoctorDaySchedule, UpcomingSchedule
+  (a doctor's upcoming appointments grouped by day), ManagePatients, and
+  AllPatients (read-only patient directory).
   React function components with hooks, no class components, no state library,
   no router libraries beyond what already exists.
 - All API calls go through `frontend/src/api.js`. Handle the standard error

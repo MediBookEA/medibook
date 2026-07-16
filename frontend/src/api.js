@@ -48,6 +48,12 @@ export function getDoctorSchedule(doctorId, dateStr) {
   return request(`/appointments?doctorId=${encodeURIComponent(doctorId)}&date=${encodeURIComponent(dateStr)}`);
 }
 
+export function getDoctorUpcoming(doctorId, fromDateStr) {
+  return request(
+    `/appointments?doctorId=${encodeURIComponent(doctorId)}&from=${encodeURIComponent(fromDateStr)}`
+  );
+}
+
 export function bookAppointment({ patientId, doctorId, startTime }) {
   return request('/appointments', {
     method: 'POST',
