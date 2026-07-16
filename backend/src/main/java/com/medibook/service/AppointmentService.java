@@ -79,6 +79,15 @@ public class AppointmentService {
                 .toList();
     }
 
+    public List<AppointmentResponse> getUpcomingSchedule(Long doctorId, LocalDate from) {
+        if (!doctorRepository.existsById(doctorId)) {
+            throw new DoctorNotFoundException(doctorId);
+        }
+        return appointmentRepository.findBookedForDoctorFrom(doctorId, from.atStartOfDay()).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     // ── private helpers ──────────────────────────────────────────────────────
 
     private record SlotValidation(Patient patient, Doctor doctor, LocalDateTime endTime) {}

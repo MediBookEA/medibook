@@ -182,4 +182,73 @@ class AppointmentRepositoryTest {
 
         assertThat(result).extracting(Appointment::getStartTime).containsExactly(earlier, later);
     }
+
+    // ── findBookedForDoctorFrom ───────────────────────────────────────────────
+
+    @Test
+    void findBookedForDoctorFrom_returnsAppointmentsOnOrAfterFrom() {
+        LocalDateTime from = LocalDateTime.of(2026, 7, 15, 0, 0);
+        em.persistAndFlush(booked(LocalDateTime.of(2026, 7, 15, 9, 0)));
+        em.persistAndFlush(booked(LocalDateTime.of(2026, 7, 20, 9, 0)));
+
+        List<Appointment> result = repository.findBookedForDoctorFrom(doctor.getId(), from);
+
+        assertThat(result).hasSize(2);
+    }
+
+    @Test
+    void findBookedForDoctorFrom_excludesAppointmentsBeforeFrom() {
+        LocalDateTime from = LocalDateTime.of(2026, 7, 15, 0, 0);
+        em.persistAndFlush(booked(LocalDateTime.of(2026, 7, 14, 23, 30)));
+
+        List<Appointment> result = repository.findBookedForDoctorFrom(doctor.getId(), from);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findBookedForDoctorFrom_includesAppointmentAtExactFromBoundary() {
+        LocalDateTime from = LocalDateTime.of(2026, 7, 15, 0, 0);
+        em.persistAndFlush(booked(from));
+
+        List<Appointment> result = repository.findBookedForDoctorFrom(doctor.getId(), from);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void findBookedForDoctorFrom_excludesCancelledAppointments() {
+        LocalDateTime from = LocalDateTime.of(2026, 7, 15, 0, 0);
+        em.persistAndFlush(cancelled(LocalDateTime.of(2026, 7, 20, 9, 0)));
+
+        List<Appointment> result = repository.findBookedForDoctorFrom(doctor.getId(), from);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findBookedForDoctorFrom_excludesOtherDoctors() {
+        LocalDateTime from = LocalDateTime.of(2026, 7, 15, 0, 0);
+        Doctor otherDoctor = em.persistAndFlush(new Doctor("Dr. Other", "Neurology"));
+        em.persistAndFlush(new Appointment(patient, otherDoctor,
+                LocalDateTime.of(2026, 7, 20, 9, 0), LocalDateTime.of(2026, 7, 20, 9, 30),
+                AppointmentStatus.BOOKED));
+
+        List<Appointment> result = repository.findBookedForDoctorFrom(doctor.getId(), from);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findBookedForDoctorFrom_orderedByStartTimeAscending() {
+        LocalDateTime from = LocalDateTime.of(2026, 7, 15, 0, 0);
+        LocalDateTime later = LocalDateTime.of(2026, 7, 25, 14, 0);
+        LocalDateTime earlier = LocalDateTime.of(2026, 7, 16, 9, 0);
+        em.persistAndFlush(booked(later));
+        em.persistAndFlush(booked(earlier));
+
+        List<Appointment> result = repository.findBookedForDoctorFrom(doctor.getId(), from);
+
+        assertThat(result).extracting(Appointment::getStartTime).containsExactly(earlier, later);
+    }
 }
