@@ -264,4 +264,43 @@ class AppointmentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
+
+    // ── GET /api/v1/appointments?doctorId=&from= ──────────────────────────────
+
+    @Test
+    void getUpcomingAppointments_validParams_returns200WithList() throws Exception {
+        LocalDate from = LocalDate.of(2026, 7, 15);
+        when(service.getUpcomingSchedule(1L, from)).thenReturn(List.of(bookedResponse()));
+
+        mvc.perform(get("/api/v1/appointments")
+                        .param("doctorId", "1")
+                        .param("from", "2026-07-15"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("BOOKED"))
+                .andExpect(jsonPath("$[0].patientName").value("John Doe"))
+                .andExpect(jsonPath("$[0].doctorName").value("Dr. Test"));
+    }
+
+    @Test
+    void getUpcomingAppointments_serviceThrowsDoctorNotFound_returns404() throws Exception {
+        when(service.getUpcomingSchedule(eq(99L), any())).thenThrow(new DoctorNotFoundException(99L));
+
+        mvc.perform(get("/api/v1/appointments")
+                        .param("doctorId", "99")
+                        .param("from", "2026-07-15"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.path").value("/api/v1/appointments"));
+    }
+
+    @Test
+    void getUpcomingAppointments_emptySchedule_returns200EmptyArray() throws Exception {
+        when(service.getUpcomingSchedule(any(), any())).thenReturn(List.of());
+
+        mvc.perform(get("/api/v1/appointments")
+                        .param("doctorId", "1")
+                        .param("from", "2026-07-15"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
 }

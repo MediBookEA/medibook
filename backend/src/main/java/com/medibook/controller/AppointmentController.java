@@ -48,10 +48,17 @@ public class AppointmentController {
         return appointmentService.rescheduleAppointment(id, request);
     }
 
-    @GetMapping
+    @GetMapping(params = {"doctorId", "date"})
     public List<AppointmentResponse> getSchedule(
             @RequestParam Long doctorId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return appointmentService.getSchedule(doctorId, date);
+    }
+
+    @GetMapping(params = {"doctorId", "from"})
+    public List<AppointmentResponse> getUpcomingSchedule(
+            @RequestParam Long doctorId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from) {
+        return appointmentService.getUpcomingSchedule(doctorId, from);
     }
 }

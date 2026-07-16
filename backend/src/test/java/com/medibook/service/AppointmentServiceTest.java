@@ -424,4 +424,67 @@ class AppointmentServiceTest {
         verify(appointmentRepository).findBookedForDoctorOnDay(
                 DOCTOR_ID, date.atStartOfDay(), date.plusDays(1).atStartOfDay());
     }
+
+    // ── getUpcomingSchedule ──────────────────────────────────────────────────
+
+    @Test
+    void getUpcomingSchedule_rejectsUnknownDoctorId() {
+        when(doctorRepository.existsById(DOCTOR_ID)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.getUpcomingSchedule(DOCTOR_ID, LocalDate.of(2026, 7, 15)))
+                .isInstanceOf(DoctorNotFoundException.class);
+    }
+
+    @Test
+    void getUpcomingSchedule_mapsRepositoryResultsToAppointmentResponseList() {
+        LocalDate from = LocalDate.of(2026, 7, 15);
+        Appointment appointment = new Appointment(patient, doctor,
+                FUTURE_MONDAY_9AM, FUTURE_MONDAY_9AM.plusMinutes(30), AppointmentStatus.BOOKED);
+        when(doctorRepository.existsById(DOCTOR_ID)).thenReturn(true);
+        when(appointmentRepository.findBookedForDoctorFrom(eq(DOCTOR_ID), any()))
+                .thenReturn(List.of(appointment));
+
+        List<AppointmentResponse> result = service.getUpcomingSchedule(DOCTOR_ID, from);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).status()).isEqualTo("BOOKED");
+        assertThat(result.get(0).patientName()).isEqualTo("John Doe");
+        assertThat(result.get(0).doctorName()).isEqualTo("Dr. Test");
+    }
+
+    @Test
+    void getUpcomingSchedule_returnsEmptyListWhenRepositoryReturnsEmpty() {
+        when(doctorRepository.existsById(DOCTOR_ID)).thenReturn(true);
+        when(appointmentRepository.findBookedForDoctorFrom(eq(DOCTOR_ID), any()))
+                .thenReturn(List.of());
+
+        assertThat(service.getUpcomingSchedule(DOCTOR_ID, LocalDate.of(2026, 7, 15))).isEmpty();
+    }
+
+    @Test
+    void getUpcomingSchedule_passesFromStartOfDayToRepository() {
+        LocalDate from = LocalDate.of(2026, 7, 15);
+        when(doctorRepository.existsById(DOCTOR_ID)).thenReturn(true);
+        when(appointmentRepository.findBookedForDoctorFrom(any(), any())).thenReturn(List.of());
+
+        service.getUpcomingSchedule(DOCTOR_ID, from);
+
+        verify(appointmentRepository).findBookedForDoctorFrom(DOCTOR_ID, from.atStartOfDay());
+    }
+
+    @Test
+    void getUpcomingSchedule_ordersResultsAscendingAsReturnedByRepository() {
+        LocalDate from = LocalDate.of(2026, 7, 15);
+        LocalDateTime earlier = LocalDateTime.of(2026, 7, 16, 9, 0);
+        LocalDateTime later = LocalDateTime.of(2026, 7, 20, 9, 0);
+        Appointment first = new Appointment(patient, doctor, earlier, earlier.plusMinutes(30), AppointmentStatus.BOOKED);
+        Appointment second = new Appointment(patient, doctor, later, later.plusMinutes(30), AppointmentStatus.BOOKED);
+        when(doctorRepository.existsById(DOCTOR_ID)).thenReturn(true);
+        when(appointmentRepository.findBookedForDoctorFrom(eq(DOCTOR_ID), any()))
+                .thenReturn(List.of(first, second));
+
+        List<AppointmentResponse> result = service.getUpcomingSchedule(DOCTOR_ID, from);
+
+        assertThat(result).extracting(AppointmentResponse::startTime).containsExactly(earlier, later);
+    }
 }

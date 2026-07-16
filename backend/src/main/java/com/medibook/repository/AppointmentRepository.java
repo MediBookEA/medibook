@@ -50,4 +50,15 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             @Param("doctorId")  Long doctorId,
             @Param("dayStart")  LocalDateTime dayStart,
             @Param("dayEnd")    LocalDateTime dayEnd);
+
+    @Query("""
+            SELECT a FROM Appointment a
+            WHERE a.doctor.id = :doctorId
+              AND a.status = com.medibook.domain.AppointmentStatus.BOOKED
+              AND a.startTime >= :from
+            ORDER BY a.startTime ASC
+            """)
+    List<Appointment> findBookedForDoctorFrom(
+            @Param("doctorId") Long doctorId,
+            @Param("from")     LocalDateTime from);
 }
